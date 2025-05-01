@@ -1,0 +1,76 @@
+import os
+from daisys import DaisysAPI
+from mcp.server.fastmcp import FastMCP
+from typing import Optional, Literal
+
+from model import McpVoice
+from websocket_tts import text_to_speech_websocket
+from http_tts import text_to_speech_api
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize FastMCP server
+mcp = FastMCP("Daisys-mcp-server")
+email = os.environ.get("DAISYS_EMAIL")
+password = os.environ.get("DAISYS_PASSWORD")
+if not email or not password:
+    raise ValueError("DAISYS_EMAIL, DAISYS_PASSWORD environment variable is required")
+
+storage_path = os.environ.get("STORAGE_PATH")
+
+
+@mcp.tool("text_to_speech")
+def text_to_speech(text: str, voice_id: Optional[str] = None):
+    try:
+        return text_to_speech_websocket(text, voice_id)
+    except Exception as e:
+        print(f"WebSocket TTS failed: {e}")
+        print("Falling back to HTTP API TTS.")
+        return text_to_speech_api(text)
+
+
+@mcp.tool(
+    "get_voices",
+    description="Get available voices filtered by model and gender, and sorted by name or timestamp.",
+)
+def get_voices(
+    model: str | None = None,
+    gender: str | None = None,
+    sort: Literal["timestamp", "name"] = "name",
+    sort_direction: Literal["asc", "desc"] = "asc",
+):
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        print("Found Daisys Speak API", speak.version())
+
+        filtered_voices = [
+            voice
+            for voice in speak.get_voices()
+            if (model is None or voice.model == model)
+            and (gender is None or voice.gender == gender)
+        ]
+        voice_list = [
+            McpVoice(
+                voice_id=voice.voice_id,
+                name=voice.name,
+                gender=voice.gender,
+                model=voice.model,
+                description=voice.description,
+            )
+            for voice in filtered_voices
+        ]
+        if sort_direction == "asc":
+            voice_list.sort(key=lambda x: x.name)
+        else:
+            voice_list.sort(key=lambda x: x.name, reverse=True)
+        return voice_list
+
+
+def main():
+    print("Starting Daisys-mcp server.")
+    mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()
