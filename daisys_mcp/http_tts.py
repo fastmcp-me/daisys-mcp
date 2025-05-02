@@ -8,8 +8,10 @@ from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError
 from pydub import AudioSegment
 from pydub.playback import play
 
-from utils import throw_mcp_error
+from daisys_mcp.utils import throw_mcp_error
+from daisys_mcp.model import Status
 
+disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
 
 email = os.environ.get("DAISYS_EMAIL")
 password = os.environ.get("DAISYS_PASSWORD")
@@ -47,5 +49,6 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
 
         audio_mp3 = speak.get_take_audio(take.take_id, format="mp3")
         audio = AudioSegment.from_file(BytesIO(audio_mp3), format="mp3")
-        play(audio)
-        return {"status": "Audio played successfully through."}
+        if not disable_audio_playback:
+            play(audio)
+        return {"status": Status.READY}

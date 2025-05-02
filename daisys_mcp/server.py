@@ -3,9 +3,10 @@ from daisys import DaisysAPI
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Literal
 
-from model import McpVoice
-from websocket_tts import text_to_speech_websocket
-from http_tts import text_to_speech_api
+from daisys_mcp.model import McpVoice
+from daisys_mcp.websocket_tts import text_to_speech_websocket
+from daisys_mcp.http_tts import text_to_speech_http
+from daisys_mcp.utils import throw_mcp_error
 
 from dotenv import load_dotenv
 
@@ -15,8 +16,9 @@ load_dotenv()
 mcp = FastMCP("Daisys-mcp-server")
 email = os.environ.get("DAISYS_EMAIL")
 password = os.environ.get("DAISYS_PASSWORD")
+
 if not email or not password:
-    raise ValueError("DAISYS_EMAIL, DAISYS_PASSWORD environment variable is required")
+    throw_mcp_error("DAISYS_EMAIL, DAISYS_PASSWORD environment variable is required")
 
 storage_path = os.environ.get("STORAGE_PATH")
 
@@ -28,7 +30,7 @@ def text_to_speech(text: str, voice_id: Optional[str] = None):
     except Exception as e:
         print(f"WebSocket TTS failed: {e}")
         print("Falling back to HTTP API TTS.")
-        return text_to_speech_api(text)
+        return text_to_speech_http(text, voice_id)
 
 
 @mcp.tool(
@@ -61,9 +63,11 @@ def get_voices(
             for voice in filtered_voices
         ]
         if sort_direction == "asc":
-            voice_list.sort(key=lambda x: x.name)
+            voice_list.sort(key=lambda x: getattr(x, sort))
+
         else:
-            voice_list.sort(key=lambda x: x.name, reverse=True)
+            voice_list.sort(key=lambda x: getattr(x, sort), reverse=True)
+
         return voice_list
 
 

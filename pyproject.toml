@@ -9,7 +9,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "daisys>=1.1.0",
+    "httpx-ws>=0.7.2",
     "mcp>=1.6.0",
+    "mcp[cli]==1.6",
     "pyaudio>=0.2.14",
     "pydub>=0.25.1",
 ]
@@ -22,6 +24,7 @@ dev = [
     "ruff==0.3.0",
     "fastmcp==0.4.1",
     "twine==6.1.0",
+    "pytest==8.0.0",
     "build>=1.0.3",
 ]
 

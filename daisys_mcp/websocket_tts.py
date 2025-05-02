@@ -12,7 +12,9 @@ from daisys.v1.speak import (
     StreamMode,
 )
 
-from utils import throw_mcp_error
+from daisys_mcp.utils import throw_mcp_error
+
+disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
 
 
 email = os.environ.get("DAISYS_EMAIL")
@@ -28,14 +30,16 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
         raise ValueError(
             "DAISYS_EMAIL and DAISYS_PASSWORD environment variables must be set."
         )
-
-    audio_player = pyaudio.PyAudio()
-    stream = audio_player.open(
-        format=pyaudio.paInt16,  # 16-bit PCM
-        channels=1,  # Mono (Daisys default)
-        rate=22050,  # Daisys default sample rate (verify if needed)
-        output=True,
-    )
+    audio_player = None
+    stream = None
+    if not disable_audio_playback:
+        audio_player = pyaudio.PyAudio()
+        stream = audio_player.open(
+            format=pyaudio.paInt16,  # 16-bit PCM
+            channels=1,  # Mono (Daisys default)
+            rate=22050,  # Daisys default sample rate (verify if needed)
+            output=True,
+        )
     with DaisysAPI("speak", email=email, password=password) as speak:
         print("Found Daisys Speak API", speak.version())
 
@@ -99,13 +103,13 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     if chunk_id in [0, None]:
                         # If we have any audio data, write out the last file
                         if len(audio_wavs[-1]) > 0:
-                            stream.write(audio_wavs[-1])
+                            stream.write(audio_wavs[-1]) if stream else None
                         # Flag that we are done receiving audio
                         done = True
 
                     # If we are receiving the last chunk of a part
                     elif chunk_id > 0:
-                        stream.write(audio_wavs[-1])
+                        stream.write(audio_wavs[-1]) if stream else None
 
                         # Start a new part
                         audio_wavs.append(bytes())
@@ -118,7 +122,7 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     if chunk_id is None:
                         # If we have any audio data, write out the file
 
-                        stream.write(audio_wavs[-1])
+                        stream.write(audio_wavs[-1]) if stream else None
 
                         # Start a new part
                         audio_wavs.append(bytes())
@@ -162,7 +166,7 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     # As opposed to other websocket errors, if a generate error
                     # occurs it does not necessarily mean we want to close the
                     # stream.
-                    print(e)
+                    throw_mcp_error(e)
 
                     # In this example, however, we actually do, because we only
                     # requested a single take, so stop here.
@@ -174,6 +178,8 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                 f"Deleting take {generated_take.take_id}:",
                 speak.delete_take(generated_take.take_id),
             )
-        stream.stop_stream()
-        stream.close()
-        audio_player.terminate()
+        if not disable_audio_playback:
+            stream.stop_stream() if stream else None
+            stream.close() if stream else None
+            audio_player.terminate() if audio_player else None
+        return {"status": Status.READY}
