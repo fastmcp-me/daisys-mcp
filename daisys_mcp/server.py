@@ -74,6 +74,22 @@ def get_voices(
         return voice_list
 
 
+@mcp.tool(
+    "get_models",
+    description="Get available models.",
+)
+def get_models():
+    pass
+
+
+@mcp.tool(
+    "create_voice",
+    description="Create a new voice.",
+)
+def create_voice():
+    pass
+
+
 def main():
     print("Starting Daisys-mcp server.")
     mcp.run(transport="stdio")

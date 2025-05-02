@@ -14,3 +14,14 @@ async def test_text_to_speech(mcp_session_factory):
                 "text_to_speech", arguments={"text": "MCP Integration Test!"}
             )
             assert json.loads(result.content[0].text) == {"status": "ready"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.requires_credentials
+async def test_get_voices(mcp_session_factory):
+    async with await mcp_session_factory() as (reader, writer):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+            result = await session.call_tool("get_voices")
+            voice_list = result.content
+            assert isinstance(voice_list, list)

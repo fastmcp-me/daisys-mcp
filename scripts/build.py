@@ -54,7 +54,7 @@ def main():
         print(f"Unsupported OS: {os_name}")
         sys.exit(1)
 
-    print("✅ sounddevice installation complete.")
+    print("✅ pre-build installation complete.")
 
 
 if __name__ == "__main__":
