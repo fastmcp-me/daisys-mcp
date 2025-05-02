@@ -34,6 +34,7 @@ def install_portaudio_macos():
             shell=True,
         )
     run(["brew", "install", "portaudio"])
+    run(["brew", "install", "ffmpeg"])
 
 
 def install_portaudio_windows():
