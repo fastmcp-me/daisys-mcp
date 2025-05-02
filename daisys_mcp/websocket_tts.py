@@ -22,7 +22,7 @@ password = os.environ.get("DAISYS_PASSWORD")
 def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
     if not email or not password:
         raise ValueError("DAISYS_EMAIL and DAISYS_PASSWORD must be set.")
-
+    stream = None
     if not disable_audio_playback:
         stream = sd.OutputStream(
             samplerate=22050,  # or check from the actual stream
@@ -55,7 +55,7 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                 if audio:
                     audio_np = np.frombuffer(audio, dtype=np.int16)
                     if not disable_audio_playback:
-                        stream.write(audio_np)
+                        stream.write(audio_np) if stream else None
                 else:
                     if chunk_id in [0, None]:
                         done = True
@@ -88,7 +88,7 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
             )
 
     if not disable_audio_playback:
-        stream.stop()
-        stream.close()
+        stream.stop() if stream else None
+        stream.close() if stream else None
 
     return {"status": Status.READY}

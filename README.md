@@ -3,9 +3,14 @@
 Daisys-mcp is a beta version and doesn't have a stable release yet. But you can try it out by doing the following:
 
 1. Get an account on [Daisys](https://www.daisys.ai/) and create an username and password.
+
 2. clone the repository: `git clone https://github.com/daisys-ai/daisys-mcp.git`
-3. Install `uv` (Python package manager), install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see the `uv` [repo](https://github.com/astral-sh/uv) for additional install methods.
-4. Create a virtual environment and install dependencies [using uv](https://github.com/astral-sh/uv):
+
+3. cd into the repository: `cd daisys-mcp`
+
+4. Install `uv` (Python package manager), install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see the `uv` [repo](https://github.com/astral-sh/uv) for additional install methods.
+
+5. Create a virtual environment and install dependencies [using uv](https://github.com/astral-sh/uv):
 
 ```bash
 uv venv
@@ -13,7 +18,7 @@ source .venv/bin/activate
 uv pip install -e .
 ```
 
-5. Add the following to your config file in your MCP client ([Claude Desktop](https://claude.ai/download), [Cursor](https://www.cursor.com/), [mcp-cli](https://github.com/chrishayuk/mcp-cli), [mcp-vscode](https://code.visualstudio.com/docs/copilot/chat/mcp-servers), etc.):
+6. Add the following to your config file in your MCP client ([Claude Desktop](https://claude.ai/download), [Cursor](https://www.cursor.com/), [mcp-cli](https://github.com/chrishayuk/mcp-cli), [mcp-vscode](https://code.visualstudio.com/docs/copilot/chat/mcp-servers), etc.):
 ```json
 {
     "mcpServers": {
