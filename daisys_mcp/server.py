@@ -23,7 +23,10 @@ if not email or not password:
 storage_path = os.environ.get("STORAGE_PATH")
 
 
-@mcp.tool("text_to_speech")
+@mcp.tool(
+    "text_to_speech",
+    description="Converts text to speech using a selected voice. Streams audio using the WebSocket API for low latency and falls back to HTTP if needed. Optionally, specify a voice ID to control the voice used for generation.",
+)
 def text_to_speech(text: str, voice_id: Optional[str] = None):
     try:
         return text_to_speech_websocket(text, voice_id)
@@ -35,7 +38,7 @@ def text_to_speech(text: str, voice_id: Optional[str] = None):
 
 @mcp.tool(
     "get_voices",
-    description="Get available voices filtered by model and gender, and sorted by name or timestamp.",
+    description="Get available voices can be filtered by model and gender, and sorted by name or timestamp in ascending or descending order.",
 )
 def get_voices(
     model: str | None = None,

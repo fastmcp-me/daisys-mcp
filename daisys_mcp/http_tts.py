@@ -1,12 +1,13 @@
 import os
 from io import BytesIO
 from typing import Optional
+import numpy as np
+
+import sounddevice as sd
+from pydub import AudioSegment
 
 from daisys import DaisysAPI
 from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError
-
-from pydub import AudioSegment
-from pydub.playback import play
 
 from daisys_mcp.utils import throw_mcp_error
 from daisys_mcp.model import Status
@@ -19,7 +20,7 @@ password = os.environ.get("DAISYS_PASSWORD")
 
 def text_to_speech_http(text: str, voice_id: Optional[str] = None):
     """
-    Generate and play audio from text using DaisysAPI's http protocol.
+    Generate and play audio from text using DaisysAPI's HTTP protocol with sounddevice.
     """
     if not email or not password:
         throw_mcp_error(
@@ -34,9 +35,7 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
             try:
                 voice_id = speak.get_voices()[-1].voice_id
             except IndexError:
-                throw_mcp_error(
-                    "No voices available try to generate a voice with the voice_generate."
-                )
+                throw_mcp_error("No voices available. Try to generate a voice first.")
 
         try:
             take = speak.generate_take(
@@ -49,6 +48,19 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
 
         audio_mp3 = speak.get_take_audio(take.take_id, format="mp3")
         audio = AudioSegment.from_file(BytesIO(audio_mp3), format="mp3")
+
         if not disable_audio_playback:
-            play(audio)
+            # Convert pydub audio to raw numpy array
+            samples = audio.get_array_of_samples()
+            audio_np = np.array(samples).astype(np.float32) / (2**15)
+            channels = audio.channels
+            frame_rate = audio.frame_rate
+
+            # If stereo, reshape for sounddevice
+            if channels == 2:
+                audio_np = audio_np.reshape((-1, 2))
+
+            sd.play(audio_np, samplerate=frame_rate)
+            sd.wait()
+
         return {"status": Status.READY}
