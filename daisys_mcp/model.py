@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 
 class Status:
@@ -15,3 +16,8 @@ class McpVoice(BaseModel):
     gender: str
     model: str
     description: str | None
+
+class McpModel(BaseModel):
+    name: str
+    displayname: str
+    flags : None | List

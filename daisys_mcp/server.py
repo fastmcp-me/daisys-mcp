@@ -3,7 +3,7 @@ from daisys import DaisysAPI
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Literal
 
-from daisys_mcp.model import McpVoice
+from daisys_mcp.model import McpVoice, McpModel
 from daisys_mcp.websocket_tts import text_to_speech_websocket
 from daisys_mcp.http_tts import text_to_speech_http
 from daisys_mcp.utils import throw_mcp_error
@@ -29,7 +29,7 @@ storage_path = os.environ.get("STORAGE_PATH")
 )
 def text_to_speech(text: str, voice_id: Optional[str] = None):
     # LLM sometimes send null as a string
-    if voice_id.lower() == "null":
+    if isinstance(voice_id, str) and voice_id.lower() == "null":
         voice_id = None
     try:
         return text_to_speech_websocket(text, voice_id)
@@ -44,12 +44,10 @@ def text_to_speech(text: str, voice_id: Optional[str] = None):
 def get_voices(
     model: str | None = None,
     gender: str | None = None,
-    sort: Literal["timestamp", "name"] = "name",
+    sort_by: Literal["description", "name"] = "name",
     sort_direction: Literal["asc", "desc"] = "asc",
 ):
     with DaisysAPI("speak", email=email, password=password) as speak:
-        # print("Found Daisys Speak API", speak.version())
-
         filtered_voices = [
             voice
             for voice in speak.get_voices()
@@ -67,10 +65,10 @@ def get_voices(
             for voice in filtered_voices
         ]
         if sort_direction == "asc":
-            voice_list.sort(key=lambda x: getattr(x, sort))
+            voice_list.sort(key=lambda x: getattr(x, sort_by))
 
         else:
-            voice_list.sort(key=lambda x: getattr(x, sort), reverse=True)
+            voice_list.sort(key=lambda x: getattr(x, sort_by), reverse=True)
 
         return voice_list
 
@@ -79,8 +77,37 @@ def get_voices(
     "get_models",
     description="Get available models.",
 )
-def get_models():
-    pass
+def get_models(
+            language: str | None = None,
+            sort_by: Literal["name", "displayname"] = "displayname",
+            sort_direction: Literal["asc", "desc"] = "asc",
+):
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        filtered_models = [
+            model
+            for model in speak.get_models()
+            if language is None or any(lang.startswith(language) for lang in model.languages )
+        ] 
+        model_list = [
+            McpModel(
+                name=model.name,
+                displayname=model.displayname,
+                flags=model.flags,
+                languages=model.languages,
+                genders=model.genders,
+                styles=model.styles,
+                prosody_types=model.prosody_types,
+                voice_inputs=model.voice_inputs
+            )
+            for model in filtered_models
+        ]
+
+        if sort_direction == "asc":
+            model_list.sort(key=lambda x: getattr(x, sort_by))
+
+        else:
+            model_list.sort(key=lambda x: getattr(x, sort_by), reverse=True)
+        return model_list
 
 
 @mcp.tool(

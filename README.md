@@ -79,4 +79,4 @@ you can also run a full integration test with:
 uv run pytest -m 'requires_credentials' # ⚠️ Running full integration tests does costs tokens on the Daisys platform 
 ```
 
-5. Debug and test locally with MCP Inspector: `mcp dev daisys_mcp/server.py`
+5. Debug and test locally with MCP Inspector: `uv run mcp dev daisys_mcp/server.py`
