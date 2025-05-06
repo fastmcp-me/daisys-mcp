@@ -3,7 +3,7 @@ from daisys import DaisysAPI
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Literal
 
-from daisys_mcp.model import McpVoice, McpModel
+from daisys_mcp.model import McpVoice, McpModel, VoiceGender
 from daisys_mcp.websocket_tts import text_to_speech_websocket
 from daisys_mcp.http_tts import text_to_speech_http
 from daisys_mcp.utils import throw_mcp_error
@@ -97,7 +97,6 @@ def get_models(
                 genders=model.genders,
                 styles=model.styles,
                 prosody_types=model.prosody_types,
-                voice_inputs=model.voice_inputs
             )
             for model in filtered_models
         ]
@@ -114,8 +113,17 @@ def get_models(
     "create_voice",
     description="Create a new voice.",
 )
-def create_voice():
-    pass
+def create_voice(name: Optional[str],
+                 gender: Optional[VoiceGender],
+                 model: Optional[str]
+                 ):
+
+    if gender not in VoiceGender:
+        raise ValueError(f"Invalid gender: {gender}. Must be one of {list(VoiceGender)}.")
+
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        voice = speak.generate_voice(name=name or 'Daisy', gender=gender or VoiceGender.FEMALE, model=model or 'english-v3.0')
+    return voice.voice_id
 
 
 def main():
