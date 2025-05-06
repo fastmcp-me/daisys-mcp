@@ -1,15 +1,11 @@
 import os
-from io import BytesIO
 from typing import Optional
-import numpy as np
 
-import sounddevice as sd
-from pydub import AudioSegment
 
 from daisys import DaisysAPI
 from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError
 
-from daisys_mcp.utils import throw_mcp_error
+from daisys_mcp.utils import throw_mcp_error, play_audio_cross_os
 from daisys_mcp.model import Status
 
 disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
@@ -47,20 +43,8 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
             raise RuntimeError(f"Error generating take: {str(e)}")
 
         audio_mp3 = speak.get_take_audio(take.take_id, format="mp3")
-        audio = AudioSegment.from_file(BytesIO(audio_mp3), format="mp3")
 
         if not disable_audio_playback:
-            # Convert pydub audio to raw numpy array
-            samples = audio.get_array_of_samples()
-            audio_np = np.array(samples).astype(np.float32) / (2**15)
-            channels = audio.channels
-            frame_rate = audio.frame_rate
-
-            # If stereo, reshape for sounddevice
-            if channels == 2:
-                audio_np = audio_np.reshape((-1, 2))
-
-            sd.play(audio_np, samplerate=frame_rate)
-            sd.wait()
+            play_audio_cross_os(audio_mp3, use_ffmpeg=False)
 
         return {"status": Status.READY}

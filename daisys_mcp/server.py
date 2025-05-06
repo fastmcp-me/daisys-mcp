@@ -28,11 +28,12 @@ storage_path = os.environ.get("STORAGE_PATH")
     description="Converts text to speech using a selected voice. Streams audio using the WebSocket API for low latency and falls back to HTTP if needed. Optionally, specify a voice ID to control the voice used for generation.",
 )
 def text_to_speech(text: str, voice_id: Optional[str] = None):
+    # LLM sometimes send null as a string
+    if voice_id.lower() == "null":
+        voice_id = None
     try:
         return text_to_speech_websocket(text, voice_id)
     except Exception as e:
-        print(f"WebSocket TTS failed: {e}")
-        print("Falling back to HTTP API TTS.")
         return text_to_speech_http(text, voice_id)
 
 
@@ -47,7 +48,7 @@ def get_voices(
     sort_direction: Literal["asc", "desc"] = "asc",
 ):
     with DaisysAPI("speak", email=email, password=password) as speak:
-        print("Found Daisys Speak API", speak.version())
+        # print("Found Daisys Speak API", speak.version())
 
         filtered_voices = [
             voice
