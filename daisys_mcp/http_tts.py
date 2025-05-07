@@ -1,11 +1,12 @@
 import os
+import io
 from typing import Optional
 
 
-from daisys import DaisysAPI
-from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError
+from daisys import DaisysAPI  # type: ignore
+from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError  # type: ignore
 
-from daisys_mcp.utils import throw_mcp_error, play_audio_cross_os
+from daisys_mcp.utils import throw_mcp_error
 from daisys_mcp.model import Status
 
 disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
@@ -45,6 +46,15 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
         audio_mp3 = speak.get_take_audio(take.take_id, format="mp3")
 
         if not disable_audio_playback:
-            play_audio_cross_os(audio_mp3, use_ffmpeg=False)
+            try:
+                import sounddevice as sd  # type: ignore
+                import soundfile as sf  # type: ignore
+            except ModuleNotFoundError:
+                message = (
+                    "`uv pip install sounddevice soundfile` to enable audio playback."
+                )
+                raise ValueError(message)
+            sd.play(*sf.read(io.BytesIO(audio_mp3)))
+            sd.wait()
 
         return {"status": Status.READY}

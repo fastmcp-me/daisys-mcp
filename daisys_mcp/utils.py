@@ -1,6 +1,7 @@
 import shutil
-import subprocess
-from typing import Iterator, Union
+import os
+from pathlib import Path
+from datetime import datetime
 
 
 class DaisysMcpError(Exception):
@@ -18,48 +19,33 @@ def is_installed(lib_name: str) -> bool:
     return True
 
 
-def play_audio_cross_os(
-    audio: Union[bytes, Iterator[bytes]],
-    notebook: bool = False,
-    use_ffmpeg: bool = True,
-) -> None:
-    if isinstance(audio, Iterator):
-        audio = b"".join(audio)
-    if notebook:
-        try:
-            from IPython.display import Audio, display  # type: ignore
-        except ModuleNotFoundError:
-            message = "`pip install ipython` required when `notebook=False` "
-            raise ValueError(message)
+def is_file_writeable(path: Path) -> bool:
+    if path.exists():
+        return os.access(path, os.W_OK)
+    parent_dir = path.parent
+    return os.access(parent_dir, os.W_OK) and parent_dir.exists()
 
-        display(Audio(audio, rate=44100, autoplay=True))
-    elif use_ffmpeg:
-        if not is_installed("ffplay"):
-            message = (
-                "ffplay from ffmpeg not found, necessary to play audio. "
-                "On mac you can install it with 'brew install ffmpeg'. "
-                "On linux and windows you can install it from https://ffmpeg.org/"
-            )
-            raise ValueError(message)
-        args = ["ffplay", "-autoexit", "-", "-nodisp"]
-        proc = subprocess.Popen(
-            args=args,
-            stdout=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate(input=audio)
-        proc.poll()
+
+def make_output_file(take_id: str, output_path: Path, extension: str = "wav") -> Path:
+    output_file_name = (
+        f"{take_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{extension}"
+    )
+    return output_path / output_file_name
+
+
+def make_output_path(
+    output_directory: str | None, base_path: str | None = None
+) -> Path:
+    output_path = None
+    if output_directory is None:
+        output_path = Path.home() / "Desktop"
+    elif not os.path.isabs(output_directory) and base_path:
+        output_path = Path(os.path.expanduser(base_path)) / Path(output_directory)
     else:
-        try:
-            import io
+        output_path = Path(os.path.expanduser(output_directory))
 
-            import sounddevice as sd  # type: ignore
-            import soundfile as sf  # type: ignore
-        except ModuleNotFoundError:
-            message = (
-                "`pip install sounddevice soundfile` required when `use_ffmpeg=False` "
-            )
-            raise ValueError(message)
-        sd.play(*sf.read(io.BytesIO(audio)))
-        sd.wait()
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    if not is_file_writeable(output_path):
+        throw_mcp_error(f"Directory ({output_path}) is not writeable")
+    return output_path

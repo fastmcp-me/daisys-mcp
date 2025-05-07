@@ -1,11 +1,11 @@
 import os
 import time
-import numpy as np
-import sounddevice as sd
+import numpy as np  # type: ignore
+import sounddevice as sd  # type: ignore
 from typing import Optional
 
-from daisys import DaisysAPI
-from daisys.v1.speak import (
+from daisys import DaisysAPI  # type: ignore
+from daisys.v1.speak import (  # type: ignore
     DaisysWebsocketGenerateError,
     Status,
     StreamOptions,
@@ -75,9 +75,6 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                 except DaisysWebsocketGenerateError as e:
                     throw_mcp_error(e)
                     break
-
-        if generated_take:
-            speak.delete_take(generated_take.take_id),
 
     if not disable_audio_playback:
         stream.stop() if stream else None

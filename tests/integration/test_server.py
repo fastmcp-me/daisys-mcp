@@ -1,7 +1,7 @@
-import pytest
 import json
 
-from mcp import ClientSession
+import pytest  # type: ignore
+from mcp import ClientSession  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -26,6 +26,7 @@ async def test_get_voices(mcp_session_factory):
             result = await session.call_tool("get_voices")
             voice_list = result.content
             assert isinstance(voice_list, list)
+
 
 @pytest.mark.asyncio
 @pytest.mark.requires_credentials

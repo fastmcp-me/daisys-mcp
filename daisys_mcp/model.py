@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List, Optional, Union
+from pydantic import BaseModel  # type: ignore
+from typing import List, Optional
 import enum
 
 
@@ -18,14 +18,16 @@ class McpVoice(BaseModel):
     model: str
     description: str | None
 
+
 class McpModel(BaseModel):
     name: str
     displayname: str
-    flags : Optional[List]
+    flags: Optional[List]
     languages: List[str]
     genders: List[str]
     styles: List[List[str]]
     prosody_types: List[str]
+
 
 class VoiceGender(str, enum.Enum):
     """Represents the gender of a voice.
@@ -35,7 +37,7 @@ class VoiceGender(str, enum.Enum):
     Values:
       MALE, FEMALE, NONBINARY
     """
-    MALE = 'male'
-    FEMALE = 'female'
-    NONBINARY = 'nonbinary'
 
+    MALE = "male"
+    FEMALE = "female"
+    NONBINARY = "nonbinary"
