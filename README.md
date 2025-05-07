@@ -14,7 +14,8 @@ Daisys-mcp is a beta version and doesn't have a stable release yet. But you can 
 
 ```bash
 uv venv
-source .venv/bin/activate
+# source .venv/Scripts/activate (Windows)
+source .venv/bin/activate (mac and linux)
 uv pip install -e .
 ```
 
@@ -69,13 +70,13 @@ cp .env.example .env
 4. Test the server by running the tests:
 
 ```bash
-uv pytest
+uv run pytest
 ```
 
 you can also run a full integration test with:
 
 ```bash
-uv pytest -m 'requires_credentials' # ⚠️ Running full integration tests does costs tokens on the Daisys platform 
+uv run pytest -m 'requires_credentials' # ⚠️ Running full integration tests does costs tokens on the Daisys platform 
 ```
 
-5. Debug and test locally with MCP Inspector: `mcp dev daisys_mcp/server.py`
+5. Debug and test locally with MCP Inspector: `uv run mcp dev daisys_mcp/server.py`

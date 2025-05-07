@@ -32,8 +32,6 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
         stream.start()
 
     with DaisysAPI("speak", email=email, password=password) as speak:
-        print("Found Daisys Speak API", speak.version())
-
         if not voice_id:
             try:
                 voice_id = speak.get_voices()[-1].voice_id
@@ -49,9 +47,6 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
             def audio_cb(request_id, take_id, part_id, chunk_id, audio):
                 nonlocal done
 
-                print(
-                    f"[{time.time() - t0:.2f}s] Received chunk {chunk_id} of part {part_id}"
-                )
                 if audio:
                     audio_np = np.frombuffer(audio, dtype=np.int16)
                     if not disable_audio_playback:
@@ -82,10 +77,7 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     break
 
         if generated_take:
-            print(
-                f"Deleting take {generated_take.take_id}:",
-                speak.delete_take(generated_take.take_id),
-            )
+            speak.delete_take(generated_take.take_id),
 
     if not disable_audio_playback:
         stream.stop() if stream else None

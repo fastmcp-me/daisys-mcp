@@ -15,7 +15,6 @@ def pytest_runtest_setup(item):
             pytest.skip("Skipping test that requires credentials")
 
 
-@pytest.mark.requires_credentials
 @pytest_asyncio.fixture
 async def mcp_session_factory():
     async def _create():

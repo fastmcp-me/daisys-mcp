@@ -3,7 +3,7 @@ from daisys import DaisysAPI
 from mcp.server.fastmcp import FastMCP
 from typing import Optional, Literal
 
-from daisys_mcp.model import McpVoice
+from daisys_mcp.model import McpVoice, McpModel, VoiceGender
 from daisys_mcp.websocket_tts import text_to_speech_websocket
 from daisys_mcp.http_tts import text_to_speech_http
 from daisys_mcp.utils import throw_mcp_error
@@ -28,11 +28,12 @@ storage_path = os.environ.get("STORAGE_PATH")
     description="Converts text to speech using a selected voice. Streams audio using the WebSocket API for low latency and falls back to HTTP if needed. Optionally, specify a voice ID to control the voice used for generation.",
 )
 def text_to_speech(text: str, voice_id: Optional[str] = None):
+    # LLM sometimes send null as a string
+    if isinstance(voice_id, str) and voice_id.lower() == "null":
+        voice_id = None
     try:
         return text_to_speech_websocket(text, voice_id)
     except Exception as e:
-        print(f"WebSocket TTS failed: {e}")
-        print("Falling back to HTTP API TTS.")
         return text_to_speech_http(text, voice_id)
 
 
@@ -43,12 +44,10 @@ def text_to_speech(text: str, voice_id: Optional[str] = None):
 def get_voices(
     model: str | None = None,
     gender: str | None = None,
-    sort: Literal["timestamp", "name"] = "name",
+    sort_by: Literal["description", "name"] = "name",
     sort_direction: Literal["asc", "desc"] = "asc",
 ):
     with DaisysAPI("speak", email=email, password=password) as speak:
-        print("Found Daisys Speak API", speak.version())
-
         filtered_voices = [
             voice
             for voice in speak.get_voices()
@@ -66,10 +65,10 @@ def get_voices(
             for voice in filtered_voices
         ]
         if sort_direction == "asc":
-            voice_list.sort(key=lambda x: getattr(x, sort))
+            voice_list.sort(key=lambda x: getattr(x, sort_by))
 
         else:
-            voice_list.sort(key=lambda x: getattr(x, sort), reverse=True)
+            voice_list.sort(key=lambda x: getattr(x, sort_by), reverse=True)
 
         return voice_list
 
@@ -78,16 +77,53 @@ def get_voices(
     "get_models",
     description="Get available models.",
 )
-def get_models():
-    pass
+def get_models(
+            language: str | None = None,
+            sort_by: Literal["name", "displayname"] = "displayname",
+            sort_direction: Literal["asc", "desc"] = "asc",
+):
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        filtered_models = [
+            model
+            for model in speak.get_models()
+            if language is None or any(lang.startswith(language) for lang in model.languages )
+        ] 
+        model_list = [
+            McpModel(
+                name=model.name,
+                displayname=model.displayname,
+                flags=model.flags,
+                languages=model.languages,
+                genders=model.genders,
+                styles=model.styles,
+                prosody_types=model.prosody_types,
+            )
+            for model in filtered_models
+        ]
+
+        if sort_direction == "asc":
+            model_list.sort(key=lambda x: getattr(x, sort_by))
+
+        else:
+            model_list.sort(key=lambda x: getattr(x, sort_by), reverse=True)
+        return model_list
 
 
 @mcp.tool(
     "create_voice",
     description="Create a new voice.",
 )
-def create_voice():
-    pass
+def create_voice(name: Optional[str],
+                 gender: Optional[VoiceGender],
+                 model: Optional[str]
+                 ):
+
+    if gender not in VoiceGender:
+        raise ValueError(f"Invalid gender: {gender}. Must be one of {list(VoiceGender)}.")
+
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        voice = speak.generate_voice(name=name or 'Daisy', gender=gender or VoiceGender.FEMALE, model=model or 'english-v3.0')
+    return voice.voice_id
 
 
 def main():
