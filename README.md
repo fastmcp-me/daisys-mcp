@@ -48,7 +48,7 @@ If you want to contribute or run from source:
 1. Clone the repository:
 
 ```bash
-git clone {this repo}
+git clone https://github.com/daisys-ai/daisys-mcp.git
 cd daisys_mcp
 ```
 

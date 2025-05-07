@@ -1,10 +1,10 @@
-import pytest
-import pytest_asyncio
 import os
 
-from mcp.client.stdio import stdio_client
-from mcp.client.stdio import StdioServerParameters
-from dotenv import load_dotenv
+import pytest  # type: ignore
+import pytest_asyncio  # type: ignore
+from mcp.client.stdio import stdio_client  # type: ignore
+from mcp.client.stdio import StdioServerParameters  # type: ignore
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 
