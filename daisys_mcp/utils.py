@@ -26,9 +26,10 @@ def is_file_writeable(path: Path) -> bool:
     return os.access(parent_dir, os.W_OK) and parent_dir.exists()
 
 
-def make_output_file(take_id: str, output_path: Path, extension: str = "wav") -> Path:
+def make_output_file(text: str, output_path: Path, extension: str = "wav") -> Path:
+    text = text.replace(" ", "_")
     output_file_name = (
-        f"{take_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{extension}"
+        f"{text[:5]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{extension}"
     )
     return output_path / output_file_name
 

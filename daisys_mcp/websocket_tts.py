@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np  # type: ignore
 import sounddevice as sd  # type: ignore
+import wave
 from typing import Optional
 
 from daisys import DaisysAPI  # type: ignore
@@ -13,16 +14,30 @@ from daisys.v1.speak import (  # type: ignore
 )
 
 from daisys_mcp.utils import throw_mcp_error
+import io
+
+from dotenv import load_dotenv  # type: ignore
+
+load_dotenv()
 
 disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
 email = os.environ.get("DAISYS_EMAIL")
 password = os.environ.get("DAISYS_PASSWORD")
+storage_path = os.environ.get("DAISYS_BASE_STORAGE_PATH")
 
 
 def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
+    """
+    Generate and return WAV audio from text using DaisysAPI's WebSocket protocol.
+    """
+
     if not email or not password:
-        raise ValueError("DAISYS_EMAIL and DAISYS_PASSWORD must be set.")
+        raise throw_mcp_error("DAISYS_EMAIL and DAISYS_PASSWORD must be set.")
+
+    wav_buffer = io.BytesIO()
+    audio_chunks = []
     stream = None
+
     if not disable_audio_playback:
         stream = sd.OutputStream(
             samplerate=22050,  # or check from the actual stream
@@ -32,12 +47,6 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
         stream.start()
 
     with DaisysAPI("speak", email=email, password=password) as speak:
-        if not voice_id:
-            try:
-                voice_id = speak.get_voices()[-1].voice_id
-            except IndexError:
-                throw_mcp_error("No voices available")
-
         with speak.websocket(voice_id=voice_id) as ws:
             done = False
             ready = False
@@ -51,6 +60,8 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     audio_np = np.frombuffer(audio, dtype=np.int16)
                     if not disable_audio_playback:
                         stream.write(audio_np) if stream else None
+                    audio_chunks.append(audio)
+
                 else:
                     if chunk_id in [0, None]:
                         done = True
@@ -76,8 +87,16 @@ def text_to_speech_websocket(text: str, voice_id: Optional[str] = None):
                     throw_mcp_error(e)
                     break
 
+    # Combine audio chunks and write to wav buffer
+    combined_audio = b"".join(audio_chunks)
+    with wave.open(wav_buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(22050)
+        wav_file.writeframes(combined_audio)
+
     if not disable_audio_playback:
         stream.stop() if stream else None
         stream.close() if stream else None
 
-    return {"status": Status.READY}
+    return wav_buffer.getvalue()

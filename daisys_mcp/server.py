@@ -1,12 +1,13 @@
 import os
 from daisys import DaisysAPI  # type: ignore
 from mcp.server.fastmcp import FastMCP  # type: ignore
-from typing import Optional, Literal
+from mcp.types import TextContent
+from typing import Literal
 
 from daisys_mcp.model import McpVoice, McpModel, VoiceGender
 from daisys_mcp.websocket_tts import text_to_speech_websocket
 from daisys_mcp.http_tts import text_to_speech_http
-from daisys_mcp.utils import throw_mcp_error
+from daisys_mcp.utils import throw_mcp_error, make_output_file, make_output_path
 
 from dotenv import load_dotenv  # type: ignore
 
@@ -26,51 +27,84 @@ storage_path = os.environ.get("DAISYS_BASE_STORAGE_PATH")
 @mcp.tool(
     "text_to_speech",
     description=(
-        "Converts input text to speech using a selected voice. Supports SSML (Speech Synthesis Markup Language) "
-        "for advanced speech customization. You can:\n\n"
-        '- **Spell out text**: `<say-as interpret-as="spell-out">Fred</say-as>`\n'
-        '- **Specify dates and times**: `<say-as interpret-as="date">11.4.1984</say-as>`\n'
-        '- **Switch languages**: `<voice language="nl">t/m 09-01-2010</voice>`\n'
-        '- **Emphasize words**: `<emphasis level="strong">Important</emphasis>`\n'
-        '- **Insert pauses**: `<break strength="medium"/>`\n'
-        '- **Define pronunciation**: `<phoneme ph="ɣ ə k l øː r d ə">gekleurde</phoneme>`\n'
-        '- **Disambiguate parts of speech**: `<w role="daisys:NN">bass</w>`\n\n'
-        "**Example Input**:\n"
-        "```xml\n"
-        "<speak>\n"
-        '  Mijn naam spel je als <say-as interpret-as="spell-out">Fred</say-as>.\n'
-        '  Het was <say-as interpret-as="year">1944</say-as>.\n'
-        '  Ik vertrek om <say-as interpret-as="time">13.10</say-as>.\n'
-        '  Ik ben geboren op <say-as interpret-as="date">11.4.1984</say-as>.\n'
-        "</speak>\n"
-        "```\n\n"
-        "**Tips**:\n"
-        "- Put break tags where you want pauses.\n"
-        "- Wrap your SSML content within `<speak>...</speak>` tags.\n"
-        "- Ensure all tags are properly closed.\n"
-        "- Use double quotes for attribute values.\n"
-        "- Validate your SSML to prevent parsing errors.\n\n"
-        "By utilizing SSML, you can fine-tune the speech output to better match your desired pronunciation, emphasis, and pacing."
-        "Also give a notification that using text_to_speech uses daisys tokens"
+        """
+        Convert text to speech with a given voice and save the output audio file to a given directory.
+        Directory is optional, if not provided, the output file will be saved to $HOME/Desktop.
+        Only one of voice_id or voice_name can be provided. If none are provided, the default voice will be used.
+
+        ⚠️ TOKEN WARNING: This tool makes an API call to Daisys API which may incur costs. 
+
+        Args:
+            text (str): The text to convert to speech.
+            voice_id (str, optional): The voice_id of the voice to use. If no voice specified use latest created voice.
+            audio_format (str, optional): Can be either "wav" or "mp3". Defaults to "wav".
+            output_dir (str, optional): Directory where files should be saved. Defaults to $HOME/Desktop if not provided.
+            streaming (bool, optional): Whether to use streaming or not. Defaults to True. (streaming makes use of the websocket protocol which send and play audio in chunks)
+            Defaults don't store if not provided.
+
+        Returns:
+            Text content with the path to the output file and name of the voice used.
+        """
     ),
 )
-def text_to_speech(text: str, voice_id: Optional[str] = None):
+# Disabled optional typing since its not yet supported by cursor's mcp client
+def text_to_speech(
+    text: str,
+    voice_id: str = None,  # type: ignore
+    audio_format: str = "wav",
+    output_dir: str = None,  # type: ignore
+    streaming: bool = True,
+):
+    if text in ["None", "", None]:
+        throw_mcp_error("Text for TTS cannot be empty.")
+
     # LLM sometimes send null as a string
     if isinstance(voice_id, str) and voice_id.lower() in ["null", "undefined"]:
-        voice_id = None
+        voice_id = None  # type: ignore
+
+    with DaisysAPI("speak", email=email, password=password) as speak:  # type: ignore
+        if not voice_id:
+            try:
+                voice_id = speak.get_voices()[-1].voice_id
+            except IndexError:
+                throw_mcp_error("No voices available. Try to generate a voice first.")
+
     try:
-        return text_to_speech_websocket(text, voice_id)
+        # this can create only a wav file but has fast inference
+        if audio_format == "wav" and streaming:
+            audiobuffer = text_to_speech_websocket(text, voice_id)
+        else:
+            audiobuffer = text_to_speech_http(text, voice_id)
     except Exception:
-        return text_to_speech_http(text, voice_id)
+        throw_mcp_error("Error generating audio")
+
+    if not storage_path:
+        return TextContent(
+            type="text",
+            text=f"Success. Voice used: {voice_id}",
+        )
+    # Create the output file
+    output_path = make_output_path(output_dir, storage_path)
+    output_file_name = make_output_file(text, output_path, audio_format)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path / output_file_name, "wb") as f:
+        f.write(audiobuffer)  # type: ignore
+
+    return TextContent(
+        type="text",
+        text=f"Success. File saved as: {output_path / output_file_name}. Voice used: {voice_id}",
+    )
 
 
 @mcp.tool(
     "get_voices",
     description="Get available voices can be filtered by model and gender, and sorted by name or timestamp in ascending or descending order.",
 )
+# Disabled optional typing since its not yet supported by cursor's mcp client
 def get_voices(
-    model: str | None = None,
-    gender: str | None = None,
+    model: str = None,
+    gender: str = None,
     sort_by: Literal["description", "name"] = "name",
     sort_direction: Literal["asc", "desc"] = "asc",
 ):
@@ -104,11 +138,16 @@ def get_voices(
     "get_models",
     description="Get available models.",
 )
+# Disabled optional typing since its not yet supported by cursor's mcp client
 def get_models(
-    language: str | None = None,
+    language: str = None,
     sort_by: Literal["name", "displayname"] = "displayname",
     sort_direction: Literal["asc", "desc"] = "asc",
 ):
+    # make sure to only use the first 2 letters of the language
+    if language:
+        language = language.lower()[:1]
+
     with DaisysAPI("speak", email=email, password=password) as speak:
         filtered_models = [
             model
@@ -142,9 +181,9 @@ def get_models(
     description="Create a new voice.",
 )
 def create_voice(
-    name: Optional[str] = "Daisy",
-    gender: Optional[VoiceGender] = VoiceGender.FEMALE,
-    model: Optional[str] = "english-v3.0",
+    name: str = "Daisy",
+    gender: VoiceGender = VoiceGender.FEMALE,
+    model: str = "english-v3.0",
 ):
     if gender not in VoiceGender:
         raise ValueError(
@@ -153,7 +192,29 @@ def create_voice(
 
     with DaisysAPI("speak", email=email, password=password) as speak:
         voice = speak.generate_voice(name=name, gender=gender, model=model)
-    return voice.voice_id
+    return McpVoice(
+        voice_id=voice.voice_id,
+        name=voice.name,
+        gender=voice.gender,
+        model=voice.model,
+        description=voice.description,
+    )
+
+
+@mcp.tool(
+    "remove_voice",
+    description="Delete a voice.",
+)
+def remove_voice(
+    voice_id: str,
+):
+    with DaisysAPI("speak", email=email, password=password) as speak:
+        speak.delete_voice(voice_id)
+
+    return TextContent(
+        type="text",
+        text=f"Success. voice {voice_id} deleted.",
+    )
 
 
 def main():

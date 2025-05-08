@@ -24,6 +24,7 @@ async def mcp_session_factory():
             env={
                 "DAISYS_EMAIL": os.getenv("DAISYS_EMAIL"),
                 "DAISYS_PASSWORD": os.getenv("DAISYS_PASSWORD"),
+                "DAISYS_BASE_STORAGE_PATH": os.getenv("DAISYS_BASE_STORAGE_PATH"),
                 "DISABLE_AUDIO_PLAYBACK": "True",
             },
         )
