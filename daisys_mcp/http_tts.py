@@ -7,7 +7,6 @@ from daisys import DaisysAPI  # type: ignore
 from daisys.v1.speak import SimpleProsody, DaisysTakeGenerateError  # type: ignore
 
 from daisys_mcp.utils import throw_mcp_error
-from daisys_mcp.model import Status
 
 disable_audio_playback = os.getenv("DISABLE_AUDIO_PLAYBACK", "false").lower() == "true"
 
@@ -28,12 +27,6 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
         throw_mcp_error("Text for TTS cannot be empty.")
 
     with DaisysAPI("speak", email=email, password=password) as speak:
-        if not voice_id:
-            try:
-                voice_id = speak.get_voices()[-1].voice_id
-            except IndexError:
-                throw_mcp_error("No voices available. Try to generate a voice first.")
-
         try:
             take = speak.generate_take(
                 voice_id=voice_id,
@@ -57,4 +50,4 @@ def text_to_speech_http(text: str, voice_id: Optional[str] = None):
             sd.play(*sf.read(io.BytesIO(audio_mp3)))
             sd.wait()
 
-        return {"status": Status.READY}
+        return audio_mp3

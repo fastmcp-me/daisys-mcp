@@ -201,6 +201,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "sounddevice" },
     { name = "soundfile" },
+    { name = "wave" },
 ]
 
 [package.optional-dependencies]
@@ -233,6 +234,7 @@ requires-dist = [
     { name = "sounddevice", specifier = ">=0.5.1" },
     { name = "soundfile", specifier = ">=0.13.1" },
     { name = "twine", marker = "extra == 'dev'", specifier = "==6.1.0" },
+    { name = "wave", specifier = ">=0.0.2" },
 ]
 provides-extras = ["dev"]
 
@@ -1047,6 +1049,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/53/07/655f4fb9592967f49
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c5/67/7d7559264a6f8ec9ce4e397ddd9157a510be1e174dc98be898b6c18eeef4/virtualenv-20.31.1-py3-none-any.whl", hash = "sha256:f448cd2f1604c831afb9ea238021060be2c0edbcad8eb0a4e8b4e14ff11a5482", size = 6057843 },
 ]
+
+[[package]]
+name = "wave"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/df/33/5a06e0c47a147b2683876ba7c576fad13e92b0b16755eb431e56c341e0cf/Wave-0.0.2.tar.gz", hash = "sha256:5a895bb85e04e38c82dba90d66a5ae8f488b50c58f3fc4df868a5bcdcabb8632", size = 27334 }
 
 [[package]]
 name = "wsproto"
