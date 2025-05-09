@@ -6,13 +6,27 @@ from mcp import ClientSession  # type: ignore
 
 @pytest.mark.asyncio
 @pytest.mark.requires_credentials
-async def test_text_to_speech(mcp_session_factory):
+async def test_text_to_speech_with_streaming(mcp_session_factory):
     async with await mcp_session_factory() as (reader, writer):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
 
             result = await session.call_tool(
                 "text_to_speech", arguments={"text": "MCP Integration Test!"}
+            )
+            assert result.content[0].text.startswith("Success")
+
+
+@pytest.mark.asyncio
+@pytest.mark.requires_credentials
+async def test_text_to_speech_without_streaming(mcp_session_factory):
+    async with await mcp_session_factory() as (reader, writer):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+
+            result = await session.call_tool(
+                "text_to_speech",
+                arguments={"text": "MCP Integration Test!", "streaming": False},
             )
             assert result.content[0].text.startswith("Success")
 

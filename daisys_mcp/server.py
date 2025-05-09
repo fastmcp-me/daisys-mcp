@@ -38,9 +38,9 @@ storage_path = os.environ.get("DAISYS_BASE_STORAGE_PATH")
         Args:
             text (str): The text to convert to speech.
             voice_id (str, optional): The voice_id of the voice to use. If no voice specified use latest created voice.
-            audio_format (str, optional): Can be either "wav" or "mp3". Defaults to "wav".
+            audio_format (str, optional): Can be either "wav" or "mp3". Defaults to "wav" always use "wav" unless mp3 specified.
             output_dir (str, optional): Directory where files should be saved. Defaults to $HOME/Desktop if not provided.
-            streaming (bool, optional): Whether to use streaming or not. Defaults to True. (streaming makes use of the websocket protocol which send and play audio in chunks)
+            streaming (bool, optional): Whether to use streaming or not. Set to True unless specifically asked to not stream. (streaming makes use of the websocket protocol which send and play audio in chunks)
             Defaults don't store if not provided.
 
         Returns:
