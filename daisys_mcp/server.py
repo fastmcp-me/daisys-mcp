@@ -1,5 +1,7 @@
 import os
 from daisys import DaisysAPI  # type: ignore
+
+# from daisys.v1.speak.models import ProsodyFeaturesUnion, ProsodyType
 from mcp.server.fastmcp import FastMCP  # type: ignore
 from mcp.types import TextContent
 from typing import Literal
@@ -28,9 +30,8 @@ storage_path = os.environ.get("DAISYS_BASE_STORAGE_PATH")
     "text_to_speech",
     description=(
         """
-        Convert text to speech with a given voice and save the output audio file to a given directory.
-        Directory is optional, if not provided, the output file will be saved to $HOME/Desktop.
-        Only one of voice_id or voice_name can be provided. If none are provided, the default voice will be used.
+        Convert text to speech with a given voice and play the audio buffer.
+        Voice_id can be provided. If not provided, the latest voice will be used.
 
         ⚠️ TOKEN WARNING: This tool makes an API call to Daisys API which may incur costs. 
 
@@ -136,8 +137,22 @@ def get_voices(
 
 @mcp.tool(
     "get_models",
-    description="Get available models.",
+    description=(
+        """
+        Get all available models from Daisys API.
+
+        Args:
+            language (str, optional): needs to be "de" for german, "en" for english and "nl" for dutch. Defaults to None.
+            sort_by (str, optional): can be "name" or "displayname". Defaults to "displayname".
+            sort_direction (str, optional): can be "asc" or "desc". Defaults to "asc".
+
+        Returns:
+            model_list: An object containing details of all models
+
+        """
+    ),
 )
+
 # Disabled optional typing since its not yet supported by cursor's mcp client
 def get_models(
     language: str = None,
@@ -178,20 +193,57 @@ def get_models(
 
 @mcp.tool(
     "create_voice",
-    description="Create a new voice.",
+    description=(
+        """
+        Convert text to speech with a given voice and play the audio buffer.
+        Voice_id can be provided. If not provided, the latest voice will be used.
+
+        before calling also call get models so it always inputs a valid model
+
+        ⚠️ TOKEN WARNING: This tool makes an API call to Daisys API which may incur costs. 
+
+        Args:
+            name (str, optional): The name of the voice to create. Defaults to "Daisy".
+            gender (str, optional): The gender of the voice can be "male" or "female". Defaults to "female".
+            model (str, optional): The model of the voice. Defaults to "english-v3.0".
+            pitch (int, optional): Adjusts the pitch level; -10 for very low pitch, 10 for very high pitch.
+            pace (int, optional): Controls the speech rate; -10 for very slow, 10 for very fast.
+            expression (int, optional): Modulates expressiveness; -10 for monotone, 10 for highly expressive.
+
+        Returns:
+            McpVoice: An object containing details of the created voice, including voice_id, name, gender, model, and description.
+
+        """
+    ),
 )
 def create_voice(
     name: str = "Daisy",
-    gender: VoiceGender = VoiceGender.FEMALE,
+    gender: str = "female",
     model: str = "english-v3.0",
+    pitch: int = 0,
+    pace: int = 0,
+    expression: int = 0,
 ):
+    # Using SimpleProsody
+    prosody_params = {
+        "pitch": pitch,
+        "pace": pace,
+        "expression": expression,
+    }
+    # Validate that all prosody parameters are within the range -10 to 10
+    for param_name, value in prosody_params.items():
+        if not -10 <= value <= 10:
+            throw_mcp_error(f"{param_name} must be between -10 and 10, got {value}.")
+
     if gender not in VoiceGender:
-        raise ValueError(
+        throw_mcp_error(
             f"Invalid gender: {gender}. Must be one of {list(VoiceGender)}."
         )
 
     with DaisysAPI("speak", email=email, password=password) as speak:
-        voice = speak.generate_voice(name=name, gender=gender, model=model)
+        voice = speak.generate_voice(
+            name=name, gender=gender, model=model, default_prosody=prosody_params
+        )
     return McpVoice(
         voice_id=voice.voice_id,
         name=voice.name,
