@@ -41,6 +41,14 @@ uv pip install -e .
 }
 ```
 
+## Common Issues
+
+If you get any issues with portaudio on linux, you can try installing it manually:
+```bash
+sudo apt-get update
+sudo apt-get install -y portaudio19-dev
+```
+
 ## Contributing
 
 If you want to contribute or run from source:

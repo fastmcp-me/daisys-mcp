@@ -137,8 +137,22 @@ def get_voices(
 
 @mcp.tool(
     "get_models",
-    description="Get available models.",
+    description=(
+        """
+        Get all available models from Daisys API.
+
+        Args:
+            language (str, optional): needs to be "de" for german, "en" for english and "nl" for dutch. Defaults to None.
+            sort_by (str, optional): can be "name" or "displayname". Defaults to "displayname".
+            sort_direction (str, optional): can be "asc" or "desc". Defaults to "asc".
+
+        Returns:
+            model_list: An object containing details of all models
+
+        """
+    ),
 )
+
 # Disabled optional typing since its not yet supported by cursor's mcp client
 def get_models(
     language: str = None,
@@ -184,6 +198,8 @@ def get_models(
         Convert text to speech with a given voice and play the audio buffer.
         Voice_id can be provided. If not provided, the latest voice will be used.
 
+        before calling also call get models so it always inputs a valid model
+
         ⚠️ TOKEN WARNING: This tool makes an API call to Daisys API which may incur costs. 
 
         Args:
@@ -228,7 +244,6 @@ def create_voice(
         voice = speak.generate_voice(
             name=name, gender=gender, model=model, default_prosody=prosody_params
         )
-        return voice
     return McpVoice(
         voice_id=voice.voice_id,
         name=voice.name,
