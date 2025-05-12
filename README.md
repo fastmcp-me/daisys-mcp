@@ -24,7 +24,8 @@ sudo apt install portaudio19-dev libjack-dev
       "args": ["daisys-mcp"],
       "env": {
         "DAISYS_EMAIL": "{Your Daisys Email}",
-        "DAISYS_PASSWORD": "{Your Daisys Password}"
+        "DAISYS_PASSWORD": "{Your Daisys Password}",
+        "DAISYS_BASE_STORAGE_PATH": "{Path where you want to store your audio files}"
       }
     }
   }
@@ -63,7 +64,8 @@ uv pip install -e .
             ],
             "env": {
                 "DAISYS_EMAIL": "{Your Daisys Email}",
-                "DAISYS_PASSWORD": "{Your Daisys Password}"
+                "DAISYS_PASSWORD": "{Your Daisys Password}",
+                "DAISYS_BASE_STORAGE_PATH": "{Path where you want to store your audio files}"
             }
         }
     }
