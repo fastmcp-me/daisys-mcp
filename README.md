@@ -1,16 +1,45 @@
-# Daisys official MCP server
+# Daisys MCP server
 
 Daisys-mcp is a beta version and doesn't have a stable release yet. But you can try it out by doing the following:
 
 1. Get an account on [Daisys](https://www.daisys.ai/) and create an username and password.
 
-2. clone the repository: `git clone https://github.com/daisys-ai/daisys-mcp.git`
 
-3. cd into the repository: `cd daisys-mcp`
+If you run on mac os run the following command:
+```bash
+brew install portaudio
+```
 
-4. Install `uv` (Python package manager), install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see the `uv` [repo](https://github.com/astral-sh/uv) for additional install methods.
+If you run on linux run the following command:
+```bash
+sudo apt install portaudio19-dev libjack-dev
+```
 
-5. Create a virtual environment and install dependencies [using uv](https://github.com/astral-sh/uv):
+2. Add the following configuration to the mcp config file in your MCP client ([Claude Desktop](https://claude.ai/download), [Cursor](https://www.cursor.com/), [mcp-cli](https://github.com/chrishayuk/mcp-cli), [mcp-vscode](https://code.visualstudio.com/docs/copilot/chat/mcp-servers), etc.):
+```json
+{
+  "mcpServers": {
+    "daisys-mcp": {
+      "command": "uvx",
+      "args": ["daisys-mcp"],
+      "env": {
+        "DAISYS_EMAIL": "{Your Daisys Email}",
+        "DAISYS_PASSWORD": "{Your Daisys Password}"
+      }
+    }
+  }
+}
+```
+
+## To build from source:
+
+1. clone the repository: `git clone https://github.com/daisys-ai/daisys-mcp.git`
+
+2. cd into the repository: `cd daisys-mcp`
+
+3. Install `uv` (Python package manager), install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see the `uv` [repo](https://github.com/astral-sh/uv) for additional install methods.
+
+4. Create a virtual environment and install dependencies [using uv](https://github.com/astral-sh/uv):
 
 ```bash
 uv venv
@@ -19,7 +48,7 @@ source .venv/bin/activate (mac and linux)
 uv pip install -e .
 ```
 
-6. Add the following to your config file in your MCP client ([Claude Desktop](https://claude.ai/download), [Cursor](https://www.cursor.com/), [mcp-cli](https://github.com/chrishayuk/mcp-cli), [mcp-vscode](https://code.visualstudio.com/docs/copilot/chat/mcp-servers), etc.):
+5. Add the following to your config file in your MCP client ([Claude Desktop](https://claude.ai/download), [Cursor](https://www.cursor.com/), [mcp-cli](https://github.com/chrishayuk/mcp-cli), [mcp-vscode](https://code.visualstudio.com/docs/copilot/chat/mcp-servers), etc.):
 ```json
 {
     "mcpServers": {
@@ -65,6 +94,7 @@ cd daisys_mcp
 ```bash
 uv venv
 source .venv/bin/activate
+uv pip install -e .
 uv pip install -e ".[dev]"
 ```
 
